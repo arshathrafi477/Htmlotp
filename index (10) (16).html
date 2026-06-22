@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OTP Verify</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0fdf4; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem; color: #111827;
+    }
+    .card {
+      background: #fff; border-radius: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 10px 40px rgba(21,128,61,0.1);
+      padding: 2rem; width: 100%; max-width: 400px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+    .brand-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #15803d, #22c55e);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .brand-name { font-size: 17px; font-weight: 700; color: #15803d; }
+    .steps { display: flex; gap: 6px; margin-bottom: 2rem; }
+    .step-bar { height: 4px; flex: 1; border-radius: 2px; background: #e5e7eb; transition: background 0.4s; }
+    .step-bar.active { background: #15803d; }
+    h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .sub { font-size: 13px; color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6; }
+    .email-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 13px; color: #15803d; font-weight: 500; margin-bottom: 1.5rem;
+    }
+    label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    input {
+      width: 100%; height: 48px; border: 1.5px solid #d1d5db; border-radius: 12px;
+      padding: 0 14px; font-size: 15px; font-family: inherit;
+      color: #111827; background: #fff; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s; margin-bottom: 1rem;
+    }
+    input:focus { border-color: #15803d; box-shadow: 0 0 0 3px rgba(21,128,61,0.12); }
+    .otp-input { font-size: 28px; font-weight: 700; letter-spacing: 0.4em; text-align: center; }
+    .btn {
+      width: 100%; height: 48px; border: none; border-radius: 12px;
+      font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.15s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary {
+      background: linear-gradient(135deg, #15803d, #16a34a); color: #fff;
+      box-shadow: 0 4px 12px rgba(21,128,61,0.3);
+    }
+    .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(21,128,61,0.4); transform: translateY(-1px); }
+    .btn-ghost { background: #f9fafb; color: #6b7280; border: 1.5px solid #e5e7eb; margin-top: 10px; }
+    .btn-ghost:hover:not(:disabled) { background: #f3f4f6; }
+    .alert {
+      display: flex; align-items: flex-start; gap: 10px;
+      border-radius: 12px; padding: 12px 14px;
+      font-size: 13px; margin-top: 14px; line-height: 1.5;
+    }
+    .alert-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .alert-error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .alert-info    { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .timer { font-size: 12px; color: #9ca3af; text-align: center; margin-top: 10px; }
+    .timer span { color: #15803d; font-weight: 600; }
+    .success-wrap { text-align: center; padding: 1rem 0; }
+    .success-icon {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, #15803d, #22c55e);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.25rem; font-size: 32px;
+      box-shadow: 0 8px 24px rgba(21,128,61,0.3);
+    }
+    .hidden { display: none !important; }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="brand-icon">🔐</div>
+    <span class="brand-name">OTP Verify</span>
+  </div>
+  <div class="steps">
+    <div class="step-bar active" id="bar1"></div>
+    <div class="step-bar" id="bar2"></div>
+    <div class="step-bar" id="bar3"></div>
+  </div>
+
+  <!-- Step 1: Email -->
+  <div id="step1">
+    <h2>Enter your email</h2>
+    <p class="sub">We'll send a 6-digit code to verify it's you. Works with any email!</p>
+    <label for="emailInput">Email address</label>
+    <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email" />
+    <button class="btn btn-primary" id="sendBtn">Send OTP →</button>
+    <div id="msg1"></div>
+  </div>
+
+  <!-- Step 2: OTP -->
+  <div id="step2" class="hidden">
+    <h2>Check your inbox</h2>
+    <p class="sub">Enter the 6-digit code sent to:</p>
+    <div class="email-chip">✉️ <span id="emailDisplay"></span></div>
+    <label for="otpInput">Verification code</label>
+    <input type="text" id="otpInput" class="otp-input" placeholder="000000" maxlength="6" inputmode="numeric" />
+    <button class="btn btn-primary" id="verifyBtn">Verify →</button>
+    <button class="btn btn-ghost" id="resendBtn">Resend code</button>
+    <div id="timerWrap" class="timer hidden"></div>
+    <div id="msg2"></div>
+  </div>
+
+  <!-- Step 3: Success -->
+  <div id="step3" class="hidden">
+    <div class="success-wrap">
+      <div class="success-icon">✅</div>
+      <h2>Verified!</h2>
+      <p class="sub" style="margin-bottom:1rem;">Your email has been confirmed successfully.</p>
+      <div class="email-chip" style="margin-bottom:1.5rem;">✉️ <span id="verifiedEmail"></span></div>
+      <button class="btn btn-primary" id="resetBtn" style="max-width:200px;margin:0 auto;">Try another email</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Backend URL ────────────────────────────────────────────────────────
+  const API = "https://arshathotp.onrender.com";
+
+  let timerInterval = null;
+  let cooldown      = 0;
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+  function setProgress(n) {
+    ["bar1","bar2","bar3"].forEach((id,i) =>
+      document.getElementById(id).classList.toggle("active", i < n));
+  }
+
+  function showStep(n) {
+    ["step1","step2","step3"].forEach((id,i) =>
+      document.getElementById(id).classList.toggle("hidden", i+1 !== n));
+    setProgress(n);
+  }
+
+  function setMsg(id, text, type) {
+    const el = document.getElementById(id);
+    if (!text) { el.innerHTML = ""; return; }
+    const icons = { success:"✅", error:"❌", info:"ℹ️" };
+    el.innerHTML = `<div class="alert alert-${type}">${icons[type]} ${text}</div>`;
+  }
+
+  function setLoading(id, loading, label) {
+    const btn = document.getElementById(id);
+    btn.disabled = loading;
+    btn.innerHTML = loading ? '<div class="spinner"></div>' : label;
+  }
+
+  function startCooldown(secs) {
+    cooldown = secs;
+    clearInterval(timerInterval);
+    const el = document.getElementById("timerWrap");
+    el.classList.remove("hidden");
+    document.getElementById("resendBtn").disabled = true;
+    timerInterval = setInterval(() => {
+      cooldown--;
+      el.innerHTML = cooldown > 0 ? `Resend in <span>${cooldown}s</span>` : "";
+      if (cooldown <= 0) {
+        clearInterval(timerInterval);
+        el.classList.add("hidden");
+        document.getElementById("resendBtn").disabled = false;
+      }
+    }, 1000);
+  }
+
+  // ── Send OTP ───────────────────────────────────────────────────────────
+  document.getElementById("sendBtn").addEventListener("click", async function() {
+    const email = document.getElementById("emailInput").value.trim();
+    if (!email || !validEmail(email)) {
+      setMsg("msg1", "Please enter a valid email address.", "error"); return;
+    }
+    setLoading("sendBtn", true, "Send OTP →");
+    setMsg("msg1", "", "");
+    try {
+      const res  = await fetch(API + "/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg("msg1", data.message, "error"); return; }
+      document.getElementById("emailDisplay").textContent = email;
+      showStep(2);
+      setMsg("msg2", data.message, "success");
+      startCooldown(30);
+    } catch {
+      setMsg("msg1", "⏳ Server waking up. Wait 30s and try again.", "info");
+    } finally {
+      setLoading("sendBtn", false, "Send OTP →");
+    }
+  });
+
+  // ── Verify OTP ─────────────────────────────────────────────────────────
+  document.getElementById("verifyBtn").addEventListener("click", async function() {
+    const email = document.getElementById("emailDisplay").textContent;
+    const otp   = document.getElementById("otpInput").value.trim();
+    if (otp.length !== 6) { setMsg("msg2", "Enter the full 6-digit code.", "error"); return; }
+    setLoading("verifyBtn", true, "Verify →");
+    setMsg("msg2", "", "");
+    try {
+      const res  = await fetch(API + "/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg("msg2", data.message, "error"); return; }
+      clearInterval(timerInterval);
+      document.getElementById("verifiedEmail").textContent = email;
+      showStep(3);
+    } catch {
+      setMsg("msg2", "Could not reach server. Try again.", "error");
+    } finally {
+      setLoading("verifyBtn", false, "Verify →");
+    }
+  });
+
+  // ── Resend OTP ─────────────────────────────────────────────────────────
+  document.getElementById("resendBtn").addEventListener("click", async function() {
+    if (cooldown > 0) return;
+    const email = document.getElementById("emailDisplay").textContent;
+    setMsg("msg2", "", "");
+    try {
+      const res  = await fetch(API + "/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      document.getElementById("otpInput").value = "";
+      setMsg("msg2", data.message, res.ok ? "success" : "error");
+      if (res.ok) startCooldown(30);
+    } catch {
+      setMsg("msg2", "Could not reach server. Try again.", "error");
+    }
+  });
+
+  // ── Reset ──────────────────────────────────────────────────────────────
+  document.getElementById("resetBtn").addEventListener("click", function() {
+    clearInterval(timerInterval);
+    cooldown = 0;
+    document.getElementById("emailInput").value = "";
+    document.getElementById("otpInput").value   = "";
+    setMsg("msg1","",""); setMsg("msg2","","");
+    showStep(1);
+  });
+
+  // ── Enter key ──────────────────────────────────────────────────────────
+  document.getElementById("emailInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("sendBtn").click();
+  });
+  document.getElementById("otpInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("verifyBtn").click();
+  });
+</script>
+</body>
+</html>
