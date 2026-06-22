@@ -186,6 +186,11 @@
     }, 1000);
   }
 
+  // ── Get message from response (server uses "error" or "message") ───────
+  function getMsg(data) {
+    return data.message || data.error || "Something went wrong.";
+  }
+
   // ── Send OTP ───────────────────────────────────────────────────────────
   document.getElementById("sendBtn").addEventListener("click", async function() {
     const email = document.getElementById("emailInput").value.trim();
@@ -201,12 +206,12 @@
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (!res.ok) { setMsg("msg1", data.message, "error"); return; }
+      if (!res.ok) { setMsg("msg1", getMsg(data), "error"); return; }
       document.getElementById("emailDisplay").textContent = email;
       showStep(2);
-      setMsg("msg2", data.message, "success");
+      setMsg("msg2", getMsg(data), "success");
       startCooldown(30);
-    } catch {
+    } catch(e) {
       setMsg("msg1", "⏳ Server waking up. Wait 30s and try again.", "info");
     } finally {
       setLoading("sendBtn", false, "Send OTP →");
@@ -227,11 +232,11 @@
         body: JSON.stringify({ email, otp }),
       });
       const data = await res.json();
-      if (!res.ok) { setMsg("msg2", data.message, "error"); return; }
+      if (!res.ok) { setMsg("msg2", getMsg(data), "error"); return; }
       clearInterval(timerInterval);
       document.getElementById("verifiedEmail").textContent = email;
       showStep(3);
-    } catch {
+    } catch(e) {
       setMsg("msg2", "Could not reach server. Try again.", "error");
     } finally {
       setLoading("verifyBtn", false, "Verify →");
@@ -251,9 +256,9 @@
       });
       const data = await res.json();
       document.getElementById("otpInput").value = "";
-      setMsg("msg2", data.message, res.ok ? "success" : "error");
+      setMsg("msg2", getMsg(data), res.ok ? "success" : "error");
       if (res.ok) startCooldown(30);
-    } catch {
+    } catch(e) {
       setMsg("msg2", "Could not reach server. Try again.", "error");
     }
   });
@@ -275,6 +280,9 @@
   document.getElementById("otpInput").addEventListener("keydown", e => {
     if (e.key === "Enter") document.getElementById("verifyBtn").click();
   });
+
+  // ── Wake up server on page load ────────────────────────────────────────
+  fetch(API + "/api/health").catch(() => {});
 </script>
 </body>
 </html>
